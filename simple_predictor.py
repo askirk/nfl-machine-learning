@@ -4,6 +4,7 @@ import csv
 from numpy import genfromtxt
 from sklearn import datasets, linear_model
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.tree import DecisionTreeRegressor
 import pandas as pd
 
 # Get team stats data frame
@@ -68,6 +69,22 @@ def getNFLOutcomeVector(year):
         outcome.extend(getTeamOutcomeVector(team_name, year))
     return np.asarray(outcome)
 
+def printStats(Y_pred, Y_test):
+    correct = 0.0
+    for i in range(Y_pred.size):
+        print "Margin Of Victory Predicted: %.2f, Actual: %.2f" % (Y_pred[i], Y_test[i])
+        if Y_pred[i] > 0 and Y_test[i] > 0:
+            correct = correct + 1.0
+        elif Y_pred[i] < 0 and Y_test[i] < 0:
+            correct = correct + 1.0
+
+    # The mean squared error
+    print("Mean squared error: %.2f"
+         % mean_squared_error(Y_test, Y_pred))
+
+    # Correct Winner Pct
+    print("Picked correct winner %.2f of the season" % (correct / Y_pred.size))
+
 def doLinearRegression(X_train, X_test, Y_train, Y_test, year):
     # Create linear regression object
     regr = linear_model.LinearRegression()
@@ -80,33 +97,37 @@ def doLinearRegression(X_train, X_test, Y_train, Y_test, year):
 
     # The coefficients
     #print('Coefficients: \n', regr.coef_)
-    # The mean squared error
-    print("Mean squared error: %.2f"
-         % mean_squared_error(Y_test, Y_pred))
     # Explained variance score: 1 is perfect prediction
     #print('Variance score: %.2f' % r2_score(Y_test, Y_pred))
-    print("For the %d Season:" % (year))
+    print("Linear Regression Prediction for the %d Season:" % (year))
 
-    for i in range(Y_pred.size):
-        print "Margin Of Victory - Predicted: %.2f, Actual: %.2f" % (Y_pred[i], Y_test[i])
+    printStats(Y_pred, Y_test)
 
-# Get Patriots data frame
-pats_team_df = team_stats_df.loc[team_stats_df["Tm"] == "New England Patriots"]
-# Get Patriots data frame for 2012
-# margin_df = pats_game_df["Home_Team_PTS"] -  pats_game_df["Visitor_Team_PTS"]
+def doDecisionTreeRegression(X_train, X_test, Y_train, Y_test, year):
+    regr = DecisionTreeRegressor()
+    regr.fit(X_train, Y_train)
+    Y_pred = regr.predict(X_test)
 
-team = "Philadelphia Eagles"
+    print("Decision Tree Regression Prediction for the %d Season:" % (year))
+    
+    printStats(Y_pred, Y_test) 
+
+#main
+
+team = "New England Patriots"
 year = 2013
 
 X_train = getTeamFeatureSet(team, year)
 X_test = getTeamFeatureSet(team, year + 1)
 Y_train = getTeamOutcomeVector(team, year + 1)
 Y_test = getTeamOutcomeVector(team, year + 2)
+
 doLinearRegression(X_train, X_test, Y_train, Y_test, year + 2)
+doDecisionTreeRegression(X_train, X_test, Y_train, Y_test, year + 2)
 
 
-X_train = getNFLFeatureSet(year)
-X_test = getNFLFeatureSet(year + 1)
-Y_train = getNFLOutcomeVector(year + 1)
-Y_test = getNFLOutcomeVector(year + 2)
-#doLinearRegression(X_train, X_test, Y_train, Y_test, year + 2)
+#X_train = getNFLFeatureSet(year)
+#X_test = getNFLFeatureSet(year + 1)
+#Y_train = getNFLOutcomeVector(year + 1)
+#Y_test = getNFLOutcomeVector(year + 2)
+#doDecisionTreeRegression(X_train, X_test, Y_train, Y_test, year + 2)
